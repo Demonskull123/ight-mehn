@@ -103,6 +103,13 @@ S.KickActions = {
     ThroughBall = true,
 }
 
+S.NoCooldownSkip = {
+    Dive = true, Diving = true, Ragdoll = true, Tumble = true,
+    Fall = true, Landing = true, Slide = true, Lunge = true,
+    Tackle = true, Keeper = true, GK = true, Goalkeeper = true,
+    Unragdoll = true,
+}
+
 S.BallControl = { Active = false, Gui = nil, BV = nil, OriginalSubject = nil, Speed = 500 }
 
 S.GKFolder = Instance.new("Folder")
@@ -303,36 +310,6 @@ hitbox.Shape = Enum.PartType.Block
 hitbox.CastShadow = false
 hitbox.Size = Vector3.new(S.Reach.Distance * 2, S.Reach.Distance * 2, S.Reach.Distance * 2)
 
-local GKToolHints = {"gk", "goalie", "keeper"}
-local GKActive = false
-local function isKeeperTool(name)
-    if not name or name == "" then return false end
-    local lower = string.lower(name)
-    for _, hint in ipairs(GKToolHints) do
-        if lower:find(hint) then return true end
-    end
-    return false
-end
-
-local function gkAcquire()
-    local character = S.LP.Character
-    if not character then return end
-    local hum = character:FindFirstChildOfClass("Humanoid")
-    if not hum then return end
-    GKActive = true
-end
-
-local function gkRelease()
-    GKActive = false
-end
-
-local function diveStateGuard(character)
-end
-
-S.LP.CharacterAdded:Connect(function(character)
-    task.wait(0.5)
-end)
-
 S.NamecallOriginal = nil
 S.NamecallOriginal = hookmetamethod(game, "__namecall", function(self, ...)
     local args = {...}
@@ -494,11 +471,24 @@ task.spawn(function()
     end
 end)
 
+local function shouldSkipAction(name)
+    if not name or name == "" then return true end
+    if S.NoCooldownSkip[name] then return true end
+    local lower = string.lower(name)
+    if lower:find("dive") or lower:find("ragdoll") or lower:find("tumble")
+        or lower:find("land") or lower:find("slide") or lower:find("lunge")
+        or lower:find("tackle") or lower:find("keeper") or lower:find("goalie")
+        or lower:find("fall") then
+        return true
+    end
+    return false
+end
+
 local function patchKickActions(enable)
     for _, obj in pairs(getgc(true)) do
         local isTable = type(obj) == "table"
         local action = isTable and rawget(obj, "Action")
-        if action then
+        if action and not shouldSkipAction(action) then
             local isKick = action == "PowerShot" or not S.KickActions[action]
             if isKick then
                 if enable then
@@ -739,12 +729,11 @@ end)
 
 S.Run.Stepped:Connect(function()
     local character = S.LP.Character
-    if character then
-        local root = character:FindFirstChild("HumanoidRootPart")
-        if root and root.Anchored then root.Anchored = false end
-    end
+    if not character then return end
+    local root = character:FindFirstChild("HumanoidRootPart")
+    if root and root.Anchored then root.Anchored = false end
 
-    if S.Player.InfStamina and character then
+    if S.Player.InfStamina then
         character:SetAttribute("Walking", false)
         character:SetAttribute("Sprinting", false)
     end
