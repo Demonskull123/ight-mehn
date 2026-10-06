@@ -127,8 +127,6 @@ S.BallUtil = {
     MagnetBV = nil,
     Spin = false,
     SpinVec = Vector3.new(0, 100, 0),
-    SizeOverride = false,
-    SizeMult = 1,
 }
 
 S.Movement = {
@@ -387,11 +385,6 @@ end)
 S.IndexOriginal = nil
 S.IndexOriginal = hookmetamethod(game, "__index", function(self, key)
     if not checkcaller() then
-        if S.BallUtil.SizeOverride and S.Tracked[self] and key == "Size" then
-            local orig = S.OrigSize[self] or S.IndexOriginal(self, key)
-            return orig * S.BallUtil.SizeMult
-        end
-
         if S.Reach.Better and S.GameActive and key == "Position" and S.Tracked[self] then
             if tick() <= S.Reach.SpoofUntil then
                 local character = S.LP.Character
@@ -1611,21 +1604,6 @@ BallTab:CreateButton({
         local ball = getBall()
         if ball then ball.CFrame = CFrame.new(Vector3.new(208, 4, -1)) end
     end,
-})
-BallTab:CreateToggle({
-    Name = "Ball Size Override",
-    CurrentValue = false,
-    Flag = "BallSizeOverride",
-    Callback = function(v) S.BallUtil.SizeOverride = v end,
-})
-BallTab:CreateSlider({
-    Name = "Ball Size",
-    Range = {1, 5},
-    Increment = 0.1,
-    Suffix = "x",
-    CurrentValue = 1,
-    Flag = "BallSizeMult",
-    Callback = function(v) S.BallUtil.SizeMult = v end,
 })
 BallTab:CreateButton({
     Name = "Ball Control Panel",
